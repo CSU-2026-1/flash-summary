@@ -7,6 +7,8 @@ services:
       - "8000:80"
     volumes:
       - ./backend/app:/app
+    env_file:
+      - .env
     depends_on:
       postgres:
         condition: service_healthy
@@ -22,6 +24,8 @@ services:
       dockerfile: ./infra/docker/Dockerfile.worker
     volumes:
       - ./backend/app:/app
+    env_file:
+      - .env
     depends_on:
       postgres:
         condition: service_healthy
