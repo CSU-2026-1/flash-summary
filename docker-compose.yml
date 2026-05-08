@@ -7,3 +7,11 @@ services:
       - "8000:80"
     volumes:
       - ./backend/app:/app
+
+  # TODO: Настройка. Без надобности не запускать
+  worker:
+    build:
+      context: .
+      dockerfile: ./infra/docker/Dockerfile.worker
+    volumes:
+      - ./backend/app:/app
