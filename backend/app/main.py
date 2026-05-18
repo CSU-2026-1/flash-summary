@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from backend.app.api.v1 import analyze, results
+from api.v1 import analyze, results
 
 app = FastAPI(
     title="Summary service",

@@ -1,9 +1,9 @@
 import uuid
 import hashlib
 from typing import Dict
-from backend.app.schemas.request import AnalyzeRequest
-from backend.app.schemas.response import ResultResponse
-from backend.app.schemas.internal import QueueTaskPayload
+from schemas.request import AnalyzeRequest
+from schemas.response import ResultResponse
+from schemas.internal import QueueTaskPayload
 
 # ИМИТАЦИЯ, todo ЗАМЕНИТЬ НА РЕДИСКУ И БД
 tasks_db: Dict[str, str] = {}

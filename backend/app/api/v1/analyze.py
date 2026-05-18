@@ -1,7 +1,7 @@
 from fastapi import APIRouter, status
-from backend.app.schemas.request import AnalyzeRequest
-from backend.app.schemas.response import TaskStatusResponse
-from backend.app.services.analyze_service import process_analyze_request
+from schemas.request import AnalyzeRequest
+from schemas.response import TaskStatusResponse
+from services.analyze_service import process_analyze_request
 
 router = APIRouter(prefix="/api/v1", tags=["analyze"])
 
@@ -13,6 +13,5 @@ router = APIRouter(prefix="/api/v1", tags=["analyze"])
     description="Эндпоинт принимает текст или ссылку, создает задачу и возвращает task_id"
 )
 async def create_analysis(request: AnalyzeRequest):
-
     response = await process_analyze_request(request)
     return response
