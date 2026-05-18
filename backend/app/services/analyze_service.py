@@ -4,7 +4,7 @@ from typing import Dict
 from schemas.request import AnalyzeRequest
 from schemas.response import ResultResponse
 from schemas.internal import QueueTaskPayload
-from core.rabbitmq import publish
+from core.rabbitmq import TaskPublisher
 
 # ИМИТАЦИЯ, todo ЗАМЕНИТЬ НА РЕДИСКУ И БД
 tasks_db: Dict[str, str] = {}
@@ -14,7 +14,7 @@ cache_db: Dict[str, str] = {}
 def get_content_hash(content: str) -> str:
     return hashlib.md5(content.encode(encoding='utf-8')).hexdigest()
 
-async def process_analyze_request(request: AnalyzeRequest):
+async def process_analyze_request(request: AnalyzeRequest, publisher: TaskPublisher):
     content_hash = get_content_hash(request.content)
 
     if content_hash in cache_db:
@@ -32,7 +32,7 @@ async def process_analyze_request(request: AnalyzeRequest):
         "content": request.content
     }
 
-    await publish(queue_message)
+    await publisher.publish(queue_message)
 
     cache_db[content_hash] = task_id
 
