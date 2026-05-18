@@ -3,7 +3,7 @@ import logging
 import asyncio
 import json
 
-from config import RABBITMQ_URL, QUEUE_NAME
+from config import RABBITMQ_URL, QUEUE_NAME, WORKER_RETRY_DELAY
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("worker")
@@ -23,25 +23,41 @@ async def handle_message(message: aio_pika.IncomingMessage) -> None:
         logger.info(f"[x] Task {payload['task_id']} is done")
     except Exception as e:
         logger.error(f"[x] Task {payload['task_id']} failed: {e}")
+        raise
 
-async def main() -> None:
+
+async def loop() -> None:
     """
     Подключается к RabbitMQ и слушает очередь
     """
 
-    connection = await aio_pika.connect(RABBITMQ_URL)
+    while True:
+        try:
+            connection = await aio_pika.connect(RABBITMQ_URL)
 
-    async with connection:
-        channel = await connection.channel()
-        await channel.set_qos(prefetch_count=1) # Ровно одна задача
-        queue = await channel.declare_queue(QUEUE_NAME, durable=True)
+            async with connection:
+                channel = await connection.channel()
+                await channel.set_qos(prefetch_count=1) # Ровно одна задача
+                queue = await channel.declare_queue(QUEUE_NAME, durable=True)
 
-        logger.info(f"[*] Waiting for messages from {QUEUE_NAME}...")
+                logger.info(f"[*] Waiting for messages from {QUEUE_NAME}...")
 
-        async with queue.iterator() as iterator:
-            async for message in iterator:
-                async with message.process(requeue=True):
-                    await handle_message(message)
+                async with queue.iterator() as iterator:
+                    async for message in iterator:
+                        async with message.process(requeue=True):
+                            await handle_message(message)
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            logger.error(f"[x] Connection to RabbitMQ lost: {e}. Retrying in {WORKER_RETRY_DELAY} seconds...")
+            await asyncio.sleep(WORKER_RETRY_DELAY)
+
+async def main() -> None:
+    try:
+        await loop()
+    finally:
+        # TODO: Закрыть соединение
+        pass
 
 
 if __name__ == "__main__":
