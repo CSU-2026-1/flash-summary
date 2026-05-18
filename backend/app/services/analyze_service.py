@@ -4,6 +4,7 @@ from typing import Dict
 from schemas.request import AnalyzeRequest
 from schemas.response import ResultResponse
 from schemas.internal import QueueTaskPayload
+from core.rabbitmq import publish
 
 # ИМИТАЦИЯ, todo ЗАМЕНИТЬ НА РЕДИСКУ И БД
 tasks_db: Dict[str, str] = {}
@@ -31,7 +32,7 @@ async def process_analyze_request(request: AnalyzeRequest):
         "content": request.content
     }
 
-    #TODO celery_app.send_task() или че вы там понапишите
+    await publish(queue_message)
 
     cache_db[content_hash] = task_id
 

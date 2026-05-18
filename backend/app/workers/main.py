@@ -1,6 +1,7 @@
 import aio_pika
 import logging
 import asyncio
+import json
 
 from config import RABBITMQ_URL, QUEUE_NAME
 
@@ -9,10 +10,19 @@ logger = logging.getLogger("worker")
 
 async def handle_message(message: aio_pika.IncomingMessage) -> None:
     """
-    TODO: Обрабатывает сообщение из очереди
+    Обрабатывает сообщение из очереди
     """
 
-    logger.info(f"[*] Received {message}")
+    try:
+        payload = json.loads(message.body.decode("utf-8"))
+        logger.info(f"[x] Received {payload}")
+
+        # TODO: Обработка. Пока что заглушка
+        await asyncio.sleep(3)
+
+        logger.info(f"[x] Task {payload['task_id']} is done")
+    except Exception as e:
+        logger.error(f"[x] Task {payload['task_id']} failed: {e}")
 
 async def main() -> None:
     """
