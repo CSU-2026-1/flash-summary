@@ -1,26 +1,25 @@
 import logging
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from api.v1 import analyze, results
-from core.rabbitmq import TaskPublisher
+from containers.container import Container
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+container = Container()
+container.wire(packages=["api.v1"])
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Контейнер с контекстом для приложения
-    """
 
     # TODO: Подключение к Postgres и Redis
 
-    publisher = TaskPublisher()
+    publisher = container.publisher()
 
     try:
         await publisher.connect()
-        app.state.publisher = publisher
     except Exception as e:
         logger.error(f"RabbitMQ is not available: {e}. Recconecting in publisher...")
     
@@ -36,6 +35,8 @@ app = FastAPI(
     version="0.1.0",
     docs_url="/docs"
 )
+
+app.container = container
 
 app.include_router(analyze.router)
 app.include_router(results.router)
