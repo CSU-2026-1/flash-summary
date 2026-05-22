@@ -1,7 +1,8 @@
 fastapi[standard]
 uvicorn
-celery
+aio-pika
 redis
 sqlalchemy
 psycopg2-binary
 pydantic-settings
+dependency-injector

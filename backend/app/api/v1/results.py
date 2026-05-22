@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
-from backend.app.schemas.response import ResultResponse, TaskStatusResponse
-from backend.app.services.analyze_service import get_task_result
+from schemas.response import ResultResponse, TaskStatusResponse
+from services.analyze_service import get_task_result
 from uuid import UUID
 
 router = APIRouter(prefix="/api/v1", tags=["results"])
