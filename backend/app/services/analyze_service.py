@@ -1,54 +1,77 @@
-import uuid
 import hashlib
-from typing import Dict
+import uuid
+from repositories.task_repository import TaskRepository
+from repositories.result_repository import ResultRepository
 from schemas.request import AnalyzeRequest
-from schemas.response import ResultResponse
 from schemas.internal import QueueTaskPayload
+from models.task import Task, TaskStatus
 from core.rabbitmq import TaskPublisher
-
-# ИМИТАЦИЯ, todo ЗАМЕНИТЬ НА РЕДИСКУ И БД
-tasks_db: Dict[str, str] = {}
-results_db: Dict[str, ResultResponse] = {}
-cache_db: Dict[str, str] = {}
+from sqlalchemy.ext.asyncio import AsyncSession
 
 def get_content_hash(content: str) -> str:
-    return hashlib.md5(content.encode(encoding='utf-8')).hexdigest()
+    return hashlib.md5(content.encode("utf-8")).hexdigest()
 
-async def process_analyze_request(request: AnalyzeRequest, publisher: TaskPublisher):
-    content_hash = get_content_hash(request.content)
+async def process_analyze_request(
+    request: AnalyzeRequest,
+    session: AsyncSession,
+    publisher: TaskPublisher,
+):
 
-    if content_hash in cache_db:
-        existing_task_id = cache_db[content_hash]
-        return {"status": "pending", "task_id": existing_task_id}
+    task = Task(
+        id=uuid.uuid4(),
+        status=TaskStatus.pending,
+        input_type=request.input_type,
+        content=request.content,
+    )
 
-    task_id = str(uuid.uuid4())
+    await TaskRepository.create(session, task)
 
-    tasks_db[task_id] = "pending"
+    queue_message = QueueTaskPayload(
+        task_id=str(task.id),
+        type="analyze",
+        input_type=request.input_type,
+        content=request.content,
+    )
 
-    queue_message = {
-        "task_id": task_id,
-        "type": "analyze",
-        "input_type": request.input_type,
-        "content": request.content
+    await publisher.publish(queue_message.model_dump())
+
+    return {
+        "status": task.status,
+        "task_id": str(task.id),
     }
 
-    await publisher.publish(queue_message)
+async def get_task_result(
+    task_id: str,
+    session: AsyncSession,
+):
+    task = await TaskRepository.get_by_id(session, task_id)
 
-    cache_db[content_hash] = task_id
+    if not task:
+        return {"error": "not_found"}
 
-    return {"status": "pending", "task_id": task_id}
+    if task.status in [TaskStatus.pending, TaskStatus.processing]:
+        return {
+            "status": task.status,
+            "task_id": str(task.id),
+        }
 
-async def get_task_result(task_id: str):
-    status = tasks_db.get(task_id)
-    if not status:
-        return {"error": "not found"}
+    if task.status == TaskStatus.failed:
+        return {
+            "status": "failed",
+            "task_id": str(task.id),
+        }
 
-    if status == "pending":
-        return {"status": "pending"}
+    result = await ResultRepository.get_by_task_id(session, task.id)
 
-    result = results_db.get(task_id)
+    if not result:
+        return {"status": "failed"}
 
-    if result:
-        return {"status": "done", "result": result.dict()}
-
-    return {"status": "failed"}
+    return {
+        "status": "completed",
+        "result": {
+            "task_id": str(task.id),
+            "summary": result.summary,
+            "key_points": result.key_points,
+            "flashcards": result.flashcards,
+        },
+    }
