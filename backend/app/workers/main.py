@@ -4,6 +4,7 @@ import asyncio
 import json
 import uuid
 
+from services.cache_service import set_cached_result
 from config import RABBITMQ_URL, QUEUE_NAME, WORKER_RETRY_DELAY
 from core.database import AsyncSessionLocal
 from repositories.task_repository import TaskRepository
@@ -41,6 +42,17 @@ async def handle_message(message: aio_pika.IncomingMessage) -> None:
             )
             await ResultRepository.create(session, fake_result)
             await TaskRepository.update_status(session, task, TaskStatus.completed)
+
+            result_data = {
+                "status": "completed",
+                "result": {
+                    "task_id": task_id,
+                    "summary": fake_result.summary,
+                    "key_points": fake_result.key_points,
+                    "flashcards": fake_result.flashcards,
+                }
+            }
+            await set_cached_result(payload["content"], result_data)
 
         logger.info(f"[x] Task {task_id} is done")
 

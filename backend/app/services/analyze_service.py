@@ -1,5 +1,5 @@
-import hashlib
 import uuid
+from services.cache_service import get_cached_result, set_cached_result
 from repositories.task_repository import TaskRepository
 from repositories.result_repository import ResultRepository
 from schemas.request import AnalyzeRequest
@@ -8,14 +8,15 @@ from models.task import Task, TaskStatus
 from core.rabbitmq import TaskPublisher
 from sqlalchemy.ext.asyncio import AsyncSession
 
-def get_content_hash(content: str) -> str:
-    return hashlib.md5(content.encode("utf-8")).hexdigest()
 
 async def process_analyze_request(
     request: AnalyzeRequest,
     session: AsyncSession,
     publisher: TaskPublisher,
 ):
+    cached = await get_cached_result(request.content)
+    if cached:
+        return cached
 
     task = Task(
         id=uuid.uuid4(),
