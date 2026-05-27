@@ -4,7 +4,8 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from api.v1 import analyze, results
 from containers.container import Container
-from core.database import init_db
+from core.database import init_db, engine
+from core.redis import redis_client
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -29,6 +30,8 @@ async def lifespan(app: FastAPI):
         yield
     finally:
         await publisher.close()
+        await redis_client.aclose()
+        await engine.dispose()
 
 app = FastAPI(
     lifespan=lifespan,

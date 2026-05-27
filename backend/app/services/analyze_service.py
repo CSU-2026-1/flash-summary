@@ -16,7 +16,10 @@ async def process_analyze_request(
 ):
     cached = await get_cached_result(request.content)
     if cached:
-        return cached
+        return {
+            "status": cached.get("status", "completed"),
+            "task_id": cached.get("result", {}).get("task_id"),
+        }
 
     task = Task(
         id=uuid.uuid4(),
