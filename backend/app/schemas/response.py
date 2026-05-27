@@ -7,7 +7,7 @@ class Flashcard(BaseModel):
     answer: str = Field(..., description="Ответ или определение")
 
 class TaskStatusResponse(BaseModel):
-    status: Literal["pending", "pending"] = Field(
+    status: Literal["pending", "processing", "completed", "failed"] = Field(
         ..., description="Статус задачи"
     )
     task_id: UUID = Field(..., description="Уникальный ID задачи")
