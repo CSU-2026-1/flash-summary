@@ -8,3 +8,4 @@ psycopg2-binary
 pydantic-settings
 dependency-injector
 alembic
+python-json-logger
