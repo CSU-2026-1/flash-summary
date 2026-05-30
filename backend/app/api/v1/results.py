@@ -34,6 +34,14 @@ async def get_result(task_id: UUID, session: AsyncSession = Depends(get_session)
     if data.get("status") in ["pending", "processing"]:
         return {"status": data["status"], "task_id": task_id_str}
 
+    if data.get("status") == "failed":
+        logger.warning("Task failed", extra={"task_id": task_id_str})
+        return {
+            "status": "failed",
+            "task_id": task_id_str,
+            "message": "Task failed"
+        }
+
     if data.get("status") == "completed":
         logger.info("Result returned", extra={"task_id": task_id_str})
         return data["result"]

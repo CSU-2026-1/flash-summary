@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Literal
+from typing import List, Literal, Optional
 from uuid import UUID
 
 class Flashcard(BaseModel):
@@ -11,6 +11,7 @@ class TaskStatusResponse(BaseModel):
         ..., description="Статус задачи"
     )
     task_id: UUID = Field(..., description="Уникальный ID задачи")
+    message: Optional[str] = None
 
 class ResultResponse(BaseModel):
     summary: str = Field(..., description="Резюме проанализированного текста")
