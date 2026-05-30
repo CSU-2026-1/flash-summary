@@ -16,6 +16,24 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("worker")
 
 
+async def update_failed_message(message: aio_pika.Message) -> None:
+    """
+    Обновление статуса задачи в БД при отправке сообщения в DLQ
+    """
+
+    try:
+        payload = json.loads(message.body.decode("utf-8"))
+
+        async with AsyncSessionLocal() as session:
+            task = await TaskRepository.get_by_id(session, payload["task_id"])
+
+            if task:
+                await TaskRepository.update_status(session, task, TaskStatus.failed)
+
+    except Exception as e:
+        logger.error(f"[x] Error updating task status: {e}")
+
+
 async def handle_message(message: aio_pika.IncomingMessage) -> None:
     payload = json.loads(message.body.decode("utf-8"))
     task_id = payload["task_id"]
@@ -128,23 +146,7 @@ async def loop() -> None:
                                     f"[x] Error processing message: {e}. Max retries reached, sending to DLQ."
                                 )
 
-                                try:
-                                    payload = json.loads(message.body.decode("utf-8"))
-
-                                    async with AsyncSessionLocal() as session:
-                                        task = await TaskRepository.get_by_id(
-                                            session, payload["task_id"]
-                                        )
-
-                                        if task:
-                                            await TaskRepository.update_status(
-                                                session, task, TaskStatus.failed
-                                            )
-                                except Exception as inner_e:
-                                    logger.error(
-                                        f"[x] Error updating task status: {inner_e}"
-                                    )
-
+                                await update_failed_message(message)
                                 await message.reject(requeue=False)
 
         except asyncio.CancelledError:
