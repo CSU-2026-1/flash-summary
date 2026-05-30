@@ -1,4 +1,5 @@
 import logging
+import socket
 
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
@@ -43,5 +44,16 @@ app = FastAPI(
 
 app.container = container
 
+SOCKET = socket.gethostname()
+
 app.include_router(analyze.router)
 app.include_router(results.router)
+
+
+@app.get(
+    "/health",
+    summary="Проверка работоспособности сервиса",
+    description="Эндпоинт для проверки статуса сервиса и его окружения",
+)
+async def health_check():
+    return {"status": "ok", "socket": SOCKET}
