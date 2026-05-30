@@ -4,5 +4,7 @@ aio-pika
 redis
 sqlalchemy
 asyncpg
+psycopg2-binary
 pydantic-settings
 dependency-injector
+alembic
