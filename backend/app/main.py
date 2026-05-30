@@ -18,7 +18,7 @@ container.wire(packages=["api.v1"])
 async def lifespan(app: FastAPI):
 
     # TODO: Подключение к Postgres и Redis
-    await init_db()
+    # Инициализация бд теперь в алембике
 
     publisher = container.publisher()
 
