@@ -17,6 +17,14 @@ services:
       redis:
         condition: service_healthy
 
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8001:81"
+    restart: unless-stopped
+    depends_on:
+      - api
+
   worker:
     build:
       context: .
