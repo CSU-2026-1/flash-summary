@@ -7,6 +7,9 @@ from services.analyze_service import process_analyze_request
 from core.rabbitmq import TaskPublisher
 from core.database import get_session
 from containers.container import Container
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1", tags=["analyze"])
 
@@ -23,6 +26,11 @@ async def create_analysis(
     session: AsyncSession = Depends(get_session),
     publisher: TaskPublisher = Depends(Provide[Container.publisher]),
 ):
+    logger.info("Analysis request received", extra={
+        "input_type": request.input_type,
+        "content_length": len(request.content)
+    })
+
     response = await process_analyze_request(
         request=request,
         session=session,

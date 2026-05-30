@@ -7,7 +7,10 @@ from schemas.internal import QueueTaskPayload
 from models.task import Task, TaskStatus
 from core.rabbitmq import TaskPublisher
 from sqlalchemy.ext.asyncio import AsyncSession
+import logging
+from core.app_logging import task_id_var
 
+logger = logging.getLogger(__name__)
 
 async def process_analyze_request(
     request: AnalyzeRequest,
@@ -20,6 +23,11 @@ async def process_analyze_request(
             "status": cached.get("status", "completed"),
             "task_id": cached.get("result", {}).get("task_id"),
         }
+
+    logger.info("Cache MISS, creating task", extra={
+        "input_type": request.input_type,
+        "content_length": len(request.content)
+    })
 
     task = Task(
         id=uuid.uuid4(),
@@ -38,6 +46,11 @@ async def process_analyze_request(
     )
 
     await publisher.publish(queue_message.model_dump())
+
+    logger.info("Task published to queue", extra={
+        "task_id": str(task.id),
+        "queue_type": queue_message.type
+    })
 
     return {
         "status": task.status,
