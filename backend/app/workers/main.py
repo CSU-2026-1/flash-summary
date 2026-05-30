@@ -4,7 +4,7 @@ import asyncio
 import json
 import uuid
 
-from services.cache_service import set_cached_result
+from services.cache_service import set_cached_result, set_task_status
 from config import RABBITMQ_URL, QUEUE_NAME, WORKER_RETRY_DELAY
 from core.database import AsyncSessionLocal
 from repositories.task_repository import TaskRepository
@@ -16,11 +16,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("worker")
 
 
-async def update_failed_message(message: aio_pika.Message) -> None:
-    """
-    Обновление статуса задачи в БД при отправке сообщения в DLQ
-    """
-
+async def update_failed_message(message: aio_pika.Message, content: str) -> None:
     try:
         payload = json.loads(message.body.decode("utf-8"))
 
@@ -29,6 +25,7 @@ async def update_failed_message(message: aio_pika.Message) -> None:
 
             if task:
                 await TaskRepository.update_status(session, task, TaskStatus.failed)
+                await set_task_status(content, payload["task_id"], "failed")
 
     except Exception as e:
         logger.error(f"[x] Error updating task status: {e}")
@@ -37,6 +34,7 @@ async def update_failed_message(message: aio_pika.Message) -> None:
 async def handle_message(message: aio_pika.IncomingMessage) -> None:
     payload = json.loads(message.body.decode("utf-8"))
     task_id = payload["task_id"]
+    content = payload["content"]
 
     logger.info(f"[x] Received {payload}")
 
@@ -49,6 +47,7 @@ async def handle_message(message: aio_pika.IncomingMessage) -> None:
 
         if message.headers.get("x-retry-count", 0) == 0:
             await TaskRepository.update_status(session, task, TaskStatus.processing)
+            await set_task_status(content, task_id, "processing")
 
         # TODO: заменить на реальную обработку
         await asyncio.sleep(3)
@@ -65,17 +64,15 @@ async def handle_message(message: aio_pika.IncomingMessage) -> None:
 
         result_data = {
             "status": "completed",
-            "result": {
-                "task_id": task_id,
-                "summary": fake_result.summary,
-                "key_points": fake_result.key_points,
-                "flashcards": fake_result.flashcards,
-            },
+            "task_id": task_id,
+            "summary": fake_result.summary,
+            "key_points": fake_result.key_points,
+            "flashcards": fake_result.flashcards,
         }
 
-        await set_cached_result(payload["content"], result_data)
+        await set_cached_result(content, result_data)
 
-        logger.info(f"[x] Task {task_id} is done")
+    logger.info(f"[x] Task {task_id} is done")
 
 
 async def loop() -> None:
@@ -146,7 +143,7 @@ async def loop() -> None:
                                     f"[x] Error processing message: {e}. Max retries reached, sending to DLQ."
                                 )
 
-                                await update_failed_message(message)
+                                await update_failed_message(message, payload["content"])
                                 await message.reject(requeue=False)
 
         except asyncio.CancelledError:
