@@ -23,10 +23,21 @@ class TaskPublisher:
         if self._connection and not self._connection.is_closed:
             return
 
+        # Стандартная очередь
         self._connection = await aio_pika.connect_robust(self.url)
         self._channel = await self._connection.channel()
-    
-        await self._channel.declare_queue(self._queue_name, durable=True)
+
+        # Dead Letter Exchange и Dead Letter Queue для обработки неудачных сообщений
+        dlx_name = f"{self._queue_name}_dlx"
+        await self._channel.declare_exchange(dlx_name, aio_pika.ExchangeType.FANOUT)
+
+        dlq_name = f"{self._queue_name}_dlq"
+        dlq = await self._channel.declare_queue(dlq_name, durable=True)
+        await dlq.bind(dlx_name)
+        
+        await self._channel.declare_queue(self._queue_name, durable=True, arguments={
+            "x-dead-letter-exchange": dlx_name
+        })
 
         logger.info(f"[*] Publisher connected to {self._queue_name}...")
 
