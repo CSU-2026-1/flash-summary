@@ -5,4 +5,4 @@ COPY ./backend/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir --upgrade -r requirements.txt
 COPY ./backend/app /app
 
-CMD ["sh", "-c", "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 80 --reload"]
+CMD ["sh", "-c", "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 80 --reload --proxy-headers --forwarded-allow-ips *"]

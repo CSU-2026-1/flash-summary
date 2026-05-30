@@ -84,6 +84,7 @@ async def loop() -> None:
                 channel = await connection.channel()
                 await channel.set_qos(prefetch_count=1)
 
+                # То же самое объявление очереди и DLX/DLQ, что и в Publisher
                 dlx_name = f"{QUEUE_NAME}_dlx"
                 await channel.declare_exchange(dlx_name, aio_pika.ExchangeType.FANOUT)
 
@@ -102,10 +103,14 @@ async def loop() -> None:
                 async with queue.iterator() as iterator:
                     async for message in iterator:
                         try:
+                            # Обработка сообщения
+
                             await handle_message(message)
                             await message.ack()
 
                         except json.JSONDecodeError as e:
+                            # Пришёл мусор - просто логируем и отбрасываем в DLQ
+
                             logger.error(f"[x] Invalid JSON in message: {e}")
                             await message.reject(requeue=False)
 
@@ -113,6 +118,8 @@ async def loop() -> None:
                             retry_count = message.headers.get("x-retry-count", 0)
 
                             if retry_count < 5:
+                                # Перепубликуем в очередь с увеличенным счетчиком попыток
+
                                 logger.warning(
                                     f"[x] Error processing message: {e}. Retrying ({retry_count + 1}/5)..."
                                 )
