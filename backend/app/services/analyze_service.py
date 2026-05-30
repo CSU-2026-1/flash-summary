@@ -1,5 +1,5 @@
 import uuid
-from services.cache_service import get_cached_result, set_cached_result
+from services.cache_service import get_cached_result, set_cached_result, set_task_status
 from repositories.task_repository import TaskRepository
 from repositories.result_repository import ResultRepository
 from schemas.request import AnalyzeRequest
@@ -18,7 +18,7 @@ async def process_analyze_request(
     if cached:
         return {
             "status": cached.get("status", "completed"),
-            "task_id": cached.get("result", {}).get("task_id"),
+            "task_id": cached.get("task_id"),
         }
 
     task = Task(
@@ -29,6 +29,7 @@ async def process_analyze_request(
     )
 
     await TaskRepository.create(session, task)
+    await set_task_status(request.content, str(task.id), "pending")
 
     queue_message = QueueTaskPayload(
         task_id=str(task.id),

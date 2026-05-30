@@ -16,6 +16,14 @@ async def get_cached_result(content: str) -> dict | None:
     return None
 
 
+async def set_task_status(content: str, task_id: str, status: str) -> None:
+    key = get_content_hash(content)
+    await redis_client.set(key, json.dumps({
+        "status": status,
+        "task_id": task_id,
+    }), ex=REDIS_TTL)
+
+
 async def set_cached_result(content: str, result: dict) -> None:
     key = get_content_hash(content)
     await redis_client.set(key, json.dumps(result), ex=REDIS_TTL)
