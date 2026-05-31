@@ -145,7 +145,13 @@ async def loop() -> None:
                                     f"[x] Error processing message: {e}. Max retries reached, sending to DLQ."
                                 )
 
-                                await update_failed_message(message, payload["content"])
+                                try:
+                                    failed_payload = json.loads(message.body.decode("utf-8"))
+                                    failed_content = failed_payload.get("content", "")
+                                except Exception:
+                                    failed_content = ""
+
+                                await update_failed_message(message, failed_content)
                                 await message.reject(requeue=False)
 
         except asyncio.CancelledError:

@@ -20,3 +20,5 @@ class AIAIAIAIHealthResponse(BaseModel):
     provider: str
     model: str
     message: str
+
+

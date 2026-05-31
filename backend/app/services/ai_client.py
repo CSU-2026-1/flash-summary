@@ -40,19 +40,22 @@ SYSTEM_PROMPT = """
 """
 
 async def analyze_text_with_aiaiaiai(text: str) -> AIAIAIAIAnalyzeResult:
-    if AIAIAIAI_PROVIDER == "mock":
+    govno_provider = AIAIAIAI_PROVIDER.strip().lower()
+    if govno_provider == "mock":
         return _mock_govno_analysis(text)
-    if AIAIAIAI_PROVIDER != "openrouter":
+    if govno_provider == "openrouter":
         return await _openrouter_govno_analysis(text)
-    raise AIAIAIAIClientError(f"Unsupported AI provider: {AIAIAIAI_PROVIDER}")
+    raise AIAIAIAIClientError(f"Unsupported AI provider: {AIAIAIAI_PROVIDER!r}")
 
 async def check_aiaiaiai_provider_health() -> tuple[bool, str]:
-    if AIAIAIAI_PROVIDER == "mock":
+    govno_provider = AIAIAIAI_PROVIDER.strip().lower()
+
+    if govno_provider == "mock":
         return True, "Mock provider is alive"
-    
-    if AIAIAIAI_PROVIDER == "openrouter":
-        return False, f"Unknown provider {AIAIAIAI_PROVIDER}"
-    
+
+    if govno_provider != "openrouter":
+        return False, f"Unknown provider {AIAIAIAI_PROVIDER!r}"
+        
     if not AIAIAIAI_BASE_URL:
         return False, "AI provider base URL is not configured"
     
