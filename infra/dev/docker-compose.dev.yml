@@ -14,9 +14,11 @@ services:
     build:
       context: .
       dockerfile: infra/dev/Dockerfile.devbox
-    woeking_dir: /workspace/flash-summary
+    working_dir: /workspace/flash-summary
     environment:
-      - DOCKER_HOST= tcp://dind:2375
-      - DOCKER_TLS_CERTDIR=""
+      DOCKER_HOST: tcp://dind:2375
+      DOCKER_TLS_CERTDIR: ""
+    volumes:
+      - .:/workspace/flash-summary
     networks:
       - devnet
