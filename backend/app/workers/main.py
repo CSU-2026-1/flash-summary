@@ -4,6 +4,7 @@ import asyncio
 import json
 import uuid
 
+from services.ai_client import analyze_text_with_aiaiaiai, AIAIAIAIClientError
 from services.cache_service import set_cached_result, set_task_status
 from config import RABBITMQ_URL, QUEUE_NAME, WORKER_RETRY_DELAY
 from core.database import AsyncSessionLocal
@@ -50,24 +51,25 @@ async def handle_message(message: aio_pika.IncomingMessage) -> None:
             await set_task_status(content, task_id, "processing")
 
         # TODO: заменить на реальную обработку
-        await asyncio.sleep(3)
+        #    не
+        anlysis_result = await analyze_text_with_aiaiaiai(content)
 
-        fake_result = Result(
+        result = Result(
             task_id=uuid.UUID(task_id),
-            summary="Заглушка summary",
-            key_points=["point 1", "point 2"],
-            flashcards=[{"question": "q1", "answer": "a1"}],
+            summary= anlysis_result.summary,
+            key_points=anlysis_result.key_points,
+            flashcards=[flashcard.model_dump() for flashcard in anlysis_result.flashcards],
         )
 
-        await ResultRepository.create(session, fake_result)
+        await ResultRepository.create(session, result)
         await TaskRepository.update_status(session, task, TaskStatus.completed)
 
         result_data = {
             "status": "completed",
             "task_id": task_id,
-            "summary": fake_result.summary,
-            "key_points": fake_result.key_points,
-            "flashcards": fake_result.flashcards,
+            "summary": result.summary,
+            "key_points": result.key_points,
+            "flashcards": result.flashcards,
         }
 
         await set_cached_result(content, result_data)
@@ -143,7 +145,13 @@ async def loop() -> None:
                                     f"[x] Error processing message: {e}. Max retries reached, sending to DLQ."
                                 )
 
-                                await update_failed_message(message, payload["content"])
+                                try:
+                                    failed_payload = json.loads(message.body.decode("utf-8"))
+                                    failed_content = failed_payload.get("content", "")
+                                except Exception:
+                                    failed_content = ""
+
+                                await update_failed_message(message, failed_content)
                                 await message.reject(requeue=False)
 
         except asyncio.CancelledError:
