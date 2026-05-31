@@ -211,6 +211,14 @@ tempCodeRunnerFile.py
 # PyPI configuration file
 .pypirc
 
+# Local agent/tooling artifacts
+.codex/
+.codegraph/
+AGENTS.md
+docs/superpowers/plans/
+*.tmp
+*.bak
+
 # Marimo
 marimo/_static/
 marimo/_lsp/
