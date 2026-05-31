@@ -9,3 +9,4 @@ pydantic-settings
 dependency-injector
 alembic
 python-json-logger
+httpx
