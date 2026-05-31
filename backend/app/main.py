@@ -9,6 +9,8 @@ from containers.container import Container
 from core.database import init_db, engine
 from core.redis import redis_client
 from core.app_logging import setup_logging
+from services.ai_client import analyze_text_with_aiaiaiai, AIAIAIAIClientError
+
 
 setup_logging(log_level="INFO")
 logger = logging.getLogger(__name__)
