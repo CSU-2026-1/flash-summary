@@ -1,13 +1,22 @@
+name: flash-summary-devbox
+
 services:
   dind:
-    image: docker:27-dind
+    image: docker:29-dind
     privileged: true
+    restart: unless-stopped
     environment:
       DOCKER_TLS_CERTDIR: ""
     volumes:
       - dind-data:/var/lib/docker
     networks:
-      - devnet
+      - devbox-net
+    healthcheck:
+      test: ["CMD", "docker", "info"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
 
   devbox:
@@ -18,14 +27,20 @@ services:
     environment:
       DOCKER_HOST: tcp://dind:2375
       DOCKER_TLS_CERTDIR: ""
+      COMPOSE_PROJECT_NAME: flash-summary-inner
     volumes:
       - .:/workspace/flash-summary
     depends_on:
       - dind
     networks:
-      - devnet
+      - devbox-net
     stdin_open: true
     tty: true
 
 volumes:
   dind-data:
+
+networks:
+  devbox-net:
+
+
