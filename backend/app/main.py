@@ -4,6 +4,7 @@ import socket
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from api.v1 import analyze, results
+from backend.app.schemas import aiaiaiai
 from containers.container import Container
 from core.database import init_db, engine
 from core.redis import redis_client
@@ -49,7 +50,7 @@ SOCKET = socket.gethostname()
 
 app.include_router(analyze.router)
 app.include_router(results.router)
-
+app.include_router(aiaiaiai.router)
 
 @app.get(
     "/health",

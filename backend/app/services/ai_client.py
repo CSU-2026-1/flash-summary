@@ -11,7 +11,7 @@ from config import (
     AIAIAIAI_TIMEOUT_SECONDS,
 )
 
-from schemas.ai import AIAIAIAIAnalyzeResult
+from backend.app.schemas.aiaiaiai import AIAIAIAIAnalyzeResult
 
 logger = logging.getLogger(__name__)
 
