@@ -20,5 +20,12 @@ services:
       DOCKER_TLS_CERTDIR: ""
     volumes:
       - .:/workspace/flash-summary
+    depends_on:
+      - dind
     networks:
       - devnet
+    stdin_open: true
+    tty: true
+
+volumes:
+  dind-data:
