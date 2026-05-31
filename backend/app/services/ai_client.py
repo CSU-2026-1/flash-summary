@@ -1,6 +1,5 @@
 import json
 import logging
-from wsgiref import headers
 import httpx
 
 from config import (
@@ -11,7 +10,7 @@ from config import (
     AIAIAIAI_TIMEOUT_SECONDS,
 )
 
-from backend.app.schemas.aiaiaiai import AIAIAIAIAnalyzeResult
+from schemas.aiaiaiai import AIAIAIAIAnalyzeResult
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +42,7 @@ SYSTEM_PROMPT = """
 async def analyze_text_with_aiaiaiai(text: str) -> AIAIAIAIAnalyzeResult:
     if AIAIAIAI_PROVIDER == "mock":
         return _mock_govno_analysis(text)
-    if AIAIAIAI_PROVIDER == "openrouter":
+    if AIAIAIAI_PROVIDER != "openrouter":
         return await _openrouter_govno_analysis(text)
     raise AIAIAIAIClientError(f"Unsupported AI provider: {AIAIAIAI_PROVIDER}")
 
@@ -70,8 +69,8 @@ async def check_aiaiaiai_provider_health() -> tuple[bool, str]:
         return False, str(exc)
     
 def _mock_govno_analysis(text: str) -> AIAIAIAIAnalyzeResult:
-    timemed_text = " ".join(text.split())
-    short_text = timemed_text[:100] if timemed_text else "Нет текста для анализа"
+    trimmed_text = " ".join(text.split())
+    short_text = trimmed_text[:100] if trimmed_text else "Нет текста для анализа"
 
     return AIAIAIAIAnalyzeResult(
         summary=f"Mock summary: {short_text}",
@@ -111,8 +110,11 @@ async def _openrouter_govno_analysis(text: str) -> AIAIAIAIAnalyzeResult:
             )
             response.raise_for_status()
             govno_payload = response.json()
-    except httpx.HTTPError as exc:
+    except httpx.HTTPStatusError as exc:
+        body = exc.response.text[:1000] if exc.response is not None else ""
         raise AIAIAIAIClientError(f"HTTP error during AI analysis: {exc}. Body: {body}") from exc
+    except httpx.HTTPError as exc:
+        raise AIAIAIAIClientError(f"HTTP error during AI analysis: {exc}") from exc
 
     try:
         govno_content = govno_payload["choices"][0]["message"]["content"]
@@ -130,6 +132,8 @@ def _build_openrouter_headers() -> dict[str, str]:
     }
 
 def _parse_aiaiaiai_json(raw_text: str) -> AIAIAIAIAnalyzeResult:
+    clean_text = raw_text.strip()
+
     if clean_text.startswith("```json"):
         clean_text = clean_text.removeprefix("```json").strip()
 

@@ -1,10 +1,10 @@
 from fastapi import APIRouter, status
 
 from config import AIAIAIAI_PROVIDER, AIAIAIAI_BASE_URL, AIAIAIAI_API_KEY, AIAIAIAI_MODEL
-from shemas.aiaiaiai import AIAIAIAIConfigResponse, AIAIAIAIHealthResponse
+from schemas.aiaiaiai import AIAIAIAIConfigResponse, AIAIAIAIHealthResponse
 from services.ai_client import check_aiaiaiai_provider_health
 
-router = APIRouter(prefix="api/v1/aiaiaiai", tags=["aiaiaiai"])
+router = APIRouter(prefix="/api/v1/aiaiaiai", tags=["aiaiaiai"])
 
 @router.get("/config", response_model=AIAIAIAIConfigResponse, 
             status_code=status.HTTP_200_OK, 
@@ -15,7 +15,7 @@ async def get_aiaiaiai_config():
     return AIAIAIAIConfigResponse(
         provider=AIAIAIAI_PROVIDER,
         model=AIAIAIAI_MODEL,
-        base_url_condigured=bool(AIAIAIAI_BASE_URL),
+        base_url_configured=bool(AIAIAIAI_BASE_URL),
         api_key_configured=bool(AIAIAIAI_API_KEY)
     )
 
