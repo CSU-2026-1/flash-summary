@@ -1,0 +1,22 @@
+services:
+  dind:
+    image: docker:27-dind
+    privileged: true
+    environment:
+      DOCKER_TLS_CERTDIR: ""
+    volumes:
+      - dind-data:/var/lib/docker
+    networks:
+      - devnet
+
+
+  devbox:
+    build:
+      context: .
+      dockerfile: infra/dev/Dockerfile.devbox
+    woeking_dir: /workspace/flash-summary
+    environment:
+      - DOCKER_HOST= tcp://dind:2375
+      - DOCKER_TLS_CERTDIR=""
+    networks:
+      - devnet
