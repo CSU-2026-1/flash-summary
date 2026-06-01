@@ -9,6 +9,7 @@ services:
       DOCKER_TLS_CERTDIR: ""
     volumes:
       - dind-data:/var/lib/docker
+      - .:/workspace/flash-summary
     networks:
       - devbox-net
     healthcheck:

@@ -1,12 +1,12 @@
 .PHONY: devbox devbox-up devbox-down devbox-logs inner-up inner-down inner-ps inner-logs inner-test
 devbox: 
-	docker compose -f docker-compose.dev.yaml run --rm devbox bash
+	docker compose -f docker-compose.dev.yml run --rm devbox bash
 devbox-up:
-	docker compose -f docker-compose.dev.yaml up -d dind
+	docker compose -f docker-compose.dev.yml up -d dind
 devbox-down:
-	docker compose -f docker-compose.dev.yaml down
+	docker compose -f docker-compose.dev.yml down
 devbox-logs:
-	docker compose -f docker-compose.dev.yaml logs -f
+	docker compose -f docker-compose.dev.yml logs -f
 inner-up:
 	docker compose up -d dind
 inner-down:
